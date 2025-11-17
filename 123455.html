@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <style>
+
+        div {
+            width: 50px;
+            height: 35px;
+        }.float_left{
+            position: absolute;
+        }
+    </style>
+    
+   
+Kolor (HEX) :   <input type="text" id="kolor"> <br>
+Numer:    <input type="number" id="div_num" min="1" max="4">
+<button type="onclick" name="wybierz">Koloruj</button>
+    <script>
+    let button = document.getElementById("Koloruj");
+    button = document.addEventListener ("click", function()) {
+        let kolor = document.getElementById["Kolor"].value
+        let numer_Div = document.getElementById["numer_Div"]
+   
+   let div1 = document.getElementById("1");
+   let div2 = document.getElementById("2");
+   let div3 = document.getElementById("3");
+   let div4 = document.getElementById("4");
+   
+     if(numer_Div = 1 ){
+     }else{ 
+            div1.style("kolor")
+    }
+   
+    if(numer_Div = 2 ){
+}else{
+
+          div2.style("kolor")
+         }
+   
+    if(numer_Div = 3 ){
+    }else{ 
+            div3.style("kolor")
+}
+    
+    if(numer_Div = 4 ){
+    }else{
+             div4.style("kolor")
+}
+  
+    }
+
+
+    </script>
+        <div id="1" class="on_right">div1</div>
+        <div id="2" style="margin-left:50px;">div2</div>
+        <div id="3"class="on_right">div3</div>
+        <div id="4"style="margin-left:50px;">div4</div>
+  
+</body>
+</html>

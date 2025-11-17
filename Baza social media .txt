@@ -1,0 +1,97 @@
+
+CREATE DATABASE projekt_socialmedia;
+
+USE projekt_socialmedia;
+
+
+CREATE TABLE uzytkownicy (
+    id_uzytkownika INT AUTO_INCREMENT PRIMARY KEY,
+    login VARCHAR(50) NOT NULL UNIQUE,
+    haslo VARCHAR(255) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    data_rejestracji TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('aktywny', 'zablokowany') DEFAULT 'aktywny'
+);
+
+
+CREATE TABLE profile (
+    id_profilu INT AUTO_INCREMENT PRIMARY KEY,
+    id_uzytkownika INT NOT NULL,
+    imie VARCHAR(50),
+    nazwisko VARCHAR(50),
+    opis TEXT,
+    rok_urodzenia YEAR,
+    avatar_url VARCHAR(255),
+
+    FOREIGN KEY (id_uzytkownika) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE posty (
+    id_postu INT AUTO_INCREMENT PRIMARY KEY,
+    id_uzytkownika INT NOT NULL,
+    tresc TEXT NOT NULL,
+    data_dodania TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (id_uzytkownika) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE komentarze (
+    id_komentarza INT AUTO_INCREMENT PRIMARY KEY,
+    id_postu INT NOT NULL,
+    id_uzytkownika INT NOT NULL,
+    tresc TEXT NOT NULL,
+    data_dodania TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (id_postu) REFERENCES posty(id_postu)
+        ON DELETE CASCADE,
+    FOREIGN KEY (id_uzytkownika) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE polubienia (
+    id_like INT AUTO_INCREMENT PRIMARY KEY,
+    id_postu INT NOT NULL,
+    id_uzytkownika INT NOT NULL,
+    data_polubienia TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(id_postu, id_uzytkownika),
+
+    FOREIGN KEY (id_postu) REFERENCES posty(id_postu)
+        ON DELETE CASCADE,
+    FOREIGN KEY (id_uzytkownika) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE
+);
+
+
+CREATE TABLE relacje (
+    id_relacji INT AUTO_INCREMENT PRIMARY KEY,
+    id_obserwujacy INT NOT NULL,
+    id_obserwowany INT NOT NULL,
+    data_obserwacji TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (id_obserwujacy) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE,
+    FOREIGN KEY (id_obserwowany) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE,
+
+    UNIQUE(id_obserwujacy, id_obserwowany)
+);
+
+
+CREATE TABLE wiadomosci (
+    id_wiadomosci INT AUTO_INCREMENT PRIMARY KEY,
+    id_nadawcy INT NOT NULL,
+    id_odbiorcy INT NOT NULL,
+    tresc TEXT NOT NULL,
+    data_wyslania TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (id_nadawcy) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE,
+    FOREIGN KEY (id_odbiorcy) REFERENCES uzytkownicy(id_uzytkownika)
+        ON DELETE CASCADE
+);

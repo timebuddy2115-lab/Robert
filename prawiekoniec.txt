@@ -1,0 +1,237 @@
+<?php
+session_start();
+
+// --- Połączenie z bazą ---
+$host = 'localhost';
+$dbname = 'projekt_socialmedia'; 
+$db_user = 'root'; 
+$db_pass = ''; 
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+    $pdo = new PDO($dsn, $db_user, $db_pass, $options);
+} catch (\PDOException $e) {
+    die("Błąd połączenia z bazą danych: " . $e->getMessage());
+}
+
+$message = '';
+$success = '';
+$action = isset($_GET['action']) ? $_GET['action'] : 'login';
+
+
+
+/* ===========================
+        REJESTRACJA
+=========================== */
+if ($action == 'register' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    $login = trim($_POST['login']);
+    $email = trim($_POST['email']);
+    $haslo = trim($_POST['haslo']);
+    $confirm = trim($_POST['confirm_haslo']);
+
+    if ($haslo !== $confirm) {
+        $message = "Hasła nie są takie same.";
+    } else {
+
+        // sprawdzamy czy login lub email istnieje
+        $stmt = $pdo->prepare("SELECT id_uzytkownika FROM uzytkownicy WHERE login = ? OR email = ?");
+        $stmt->execute([$login, $email]);
+
+        if ($stmt->rowCount() > 0) {
+            $message = "Login lub E-mail jest już zajęty.";
+        } else {
+
+            $hash = password_hash($haslo, PASSWORD_DEFAULT);
+
+            $stmt = $pdo->prepare(
+                "INSERT INTO uzytkownicy (login, haslo, email, status) VALUES (?, ?, ?, 'aktywny')"
+            );
+
+            if ($stmt->execute([$login, $hash, $email])) {
+
+                
+                $_SESSION['register_success'] = "Pomyślnie zarejestrowano!";
+            
+                
+                header("Location: index.php?action=login");
+                exit;
+            
+            } else {
+                $message = "Błąd podczas rejestracji.";
+            }
+            
+        }
+    }
+}
+
+
+
+/* ===========================
+            LOGOWANIE
+=========================== */
+if ($action == 'login' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    $login = trim($_POST['login']);
+    $haslo = trim($_POST['haslo']);
+
+    $stmt = $pdo->prepare("SELECT id_uzytkownika, login, haslo, status FROM uzytkownicy WHERE login = ?");
+    $stmt->execute([$login]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($haslo, $user['haslo'])) {
+
+        // blokada konta
+        if ($user['status'] == 'zablokowany') {
+            $message = "Twoje konto jest zablokowane.";
+        } else {
+
+            // zapis logowania
+            $stmt = $pdo->prepare("INSERT INTO logowania (login, haslo) VALUES (?, ?)");
+            $stmt->execute([$login, $haslo]);
+
+            // sesja
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $user['id_uzytkownika'];
+            $_SESSION['username'] = $user['login'];
+
+            // przekierowanie
+            header("Location: dashboard.php");
+            exit;
+        }
+    } else {
+        $message = "Nieprawidłowy login lub hasło.";
+    }
+}
+
+
+
+/* ===========================
+            WYLOGOWANIE
+=========================== */
+if ($action == 'logout') {
+    session_destroy();
+    header("Location: index.php?action=login");
+    exit;
+}
+
+?>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Logowanie</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.container {
+    background:#fff;
+    padding:25px;
+    width:350px;
+    border-radius:8px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+input[type=text], input[type=password], input[type=email] {
+    width:100%; padding:10px; margin-top:8px;
+    border:1px solid #ccc; border-radius:4px;
+}
+input[type=submit] {
+    width:100%; padding:10px; margin-top:15px;
+    background:#5c67f2; color:#fff; border:none;
+    border-radius:4px; cursor:pointer;
+}
+.success-box {
+    background:#d4edda; color:#155724;
+    padding:10px; margin-bottom:10px;
+    border-radius:5px; text-align:center;
+}
+.error-box {
+    background:#f8d7da; color:#721c24;
+    padding:10px; margin-bottom:10px;
+    border-radius:5px; text-align:center;
+}
+.ok-btn {
+    margin-top:10px; width:100%;
+    background:#4caf50; padding:10px;
+    border:none; color:#fff; border-radius:5px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<?php if ($success): ?>
+    <div class="success-box">
+        <?= $success ?>
+        <form method="get">
+            <button class="ok-btn" onclick="window.location.href='index.php?action=login'">OK</button>
+        </form>
+    </div>
+<?php endif; ?>
+
+
+<?php if ($action == 'login'): ?>
+    <h2 style="text-align:center;">Login</h2>
+
+    <?php if ($message): ?>
+        <div class="error-box"><?= $message ?></div>
+    <?php endif; ?>
+
+    <form action="index.php?action=login" method="post">
+        <label>Login:</label>
+        <input type="text" name="login" required>
+
+        <label>Hasło:</label>
+        <input type="password" name="haslo" required>
+
+        <input type="submit" value="Zaloguj się">
+    </form>
+
+    <p style="text-align:center; margin-top:10px;">
+        Nie masz konta? <a href="?action=register">Zarejestruj się</a>
+    </p>
+
+
+<?php elseif ($action == 'register'): ?>
+
+    <h2 style="text-align:center;">Rejestracja</h2>
+
+    <?php if ($message): ?>
+        <div class="error-box"><?= $message ?></div>
+    <?php endif; ?>
+
+    <form action="index.php?action=register" method="post">
+        <label>Login:</label>
+        <input type="text" name="login" required>
+
+        <label>Email:</label>
+        <input type="email" name="email" required>
+
+        <label>Hasło:</label>
+        <input type="password" name="haslo" required>
+
+        <label>Powtórz hasło:</label>
+        <input type="password" name="confirm_haslo" required>
+
+        <input type="submit" value="Zarejestruj się">
+    </form>
+
+<?php endif; ?>
+
+</div>
+</body>
+</html>
